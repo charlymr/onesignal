@@ -8,11 +8,8 @@ let package = Package(
     products: [
         .library(name: "OneSignal", targets: ["OneSignal"]),
     ],
-    dependencies: [
-        .package(url: "https://github.com/vapor/vapor.git", from: "3.3.0")
-    ],
     targets: [
-        .target(name: "OneSignal", dependencies: ["Vapor"]),
+        .target(name: "OneSignal"),
         .testTarget(name: "OneSignalTests", dependencies: ["OneSignal"]),
     ]
 )
