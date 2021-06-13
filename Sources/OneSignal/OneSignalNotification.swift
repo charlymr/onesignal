@@ -5,12 +5,11 @@
 //  Created by Anthony Castelli on 9/5/18.
 //
 
-import AsyncHTTPClient
 import Foundation
 
-public struct OneSignalNotification: Codable {
+public struct OneSignalNotification {
+    
     public enum Method {
-        case players(_ playersId: [String], iosDeviceTokens: [String]?)
         /**
          playersId: [String]
          RECOMMENDED - Specific players to send your notification to. Does not require API Auth Key.
@@ -26,8 +25,11 @@ public struct OneSignalNotification: Codable {
          
          Example: `ce777617da7f548fe7a9ab6febb56cf39fba6d38203...`
          */
+        static func withPlayers(_ playersId: [String], iosDeviceTokens: [String]? = nil) -> Method {
+            return .players(playersId, iosDeviceTokens: iosDeviceTokens)
+        }
+        case players(_ playersId: [String], iosDeviceTokens: [String]?)
 
-        case segments(_ included: [String], excluded: [String]?)
         /**
          included: [String]
          The segment names you want to target.
@@ -43,24 +45,88 @@ public struct OneSignalNotification: Codable {
          
          Example: ["Active Users", "Inactive Users"]
          */
+        static func withSegments(_ included: [String], excluded: [String]? = nil) -> Method {
+            return .segments(included, excluded: excluded)
+        }
+        case segments(_ included: [String], excluded: [String]?)
+
+        /**
+         "All" sergments
+         All users in from all segments will receive a notification.
+         This targeting parameter is only compatible with excluded_segments.
+          
+         excluded: [String]?
+         Segment that will be excluded when sending.
+         Users in these segments will not receive a notification, even if they were included in included_segments.
+         This targeting parameter is only compatible with included_segments.
+         
+         Example: ["Active Users", "Inactive Users"]
+         */
+        static func withAllSegments(excluded: [String]? = nil) -> Method {
+            return .segments(["All"], excluded: excluded)
+        }
+
     }
-    
-    enum CodingKeys: String, CodingKey {
-        case title
-        case subtitle
-        case message
 
-        case category = "ios_category"
+    public typealias BadgeType = OneSignalIOSBadgeType
 
-        case sound = "ios_sound"
-        case sendAfter = "send_after"
-        case additionalData = "data"
-        case attachments = "ios_attachments"
+    public struct Config {
+        /**
+         Sound file that is included in your app to play instead of the default device notification sound.
+         Pass nil to disable vibration and sound for the notification.
 
-        case isContentAvailable = "content_available"
-        case isContentMutable = "mutable_content"
+         Example: `"notification.wav"`
+         */
+        
+        public let sound: String?
+        /**
+         Category APS payload, use with `registerUserNotificationSettings:categories` in your Objective-C / Swift code.
+
+         Example: calendar category which contains actions like accept and decline
+         iOS 10+ This will trigger your `UNNotificationContentExtension` whose ID matches this category.
+         */
+        public let category: String?
+        
+        /**
+         Schedule notification for future delivery.
+
+         Examples: All examples are the exact same date & time.
+         `"Thu Sep 24 2015 14:00:00 GMT-0700 (PDT)"`
+         `"September 24th 2015, 2:00:00 pm UTC-07:00"`
+         `"2015-09-24 14:00:00 GMT-0700"`
+         `"Sept 24 2015 14:00:00 GMT-0700"`
+         `"Thu Sep 24 2015 14:00:00 GMT-0700 (Pacific Daylight Time)"`
+         */
+        public let sendAfter: String?
+        /**
+         Used with ``badgeType``, describes the value to set or amount to increase/decrease your app's iOS badge count by.
+         You can use a negative number to decrease the badge count when used with an `badgeType` of Increase.
+         */
+        public let badge: Int?
+        /**
+         Describes whether to set or increase/decrease your app's iOS badge count by the`` badge`` specified count. Can specify `None`, `SetTo`, or `Increase`.
+         `None` leaves the count unaffected.
+         `SetTo` directly sets the badge count to the number specified in ios_badgeCount.
+         `Increase` adds the number specified in ios_badgeCount to the total. Use a negative number to decrease the badge count.
+         */
+        public let badgeType: BadgeType?
+        /**
+         Add sing media attachments to notifications. Set as JSON object, key as a media id of your choice and the value as a valid local filename or URL. User must press and hold on the notification to view.
+            
+         Do not set `id` in `attachments` if you providing multiple attachment, doing will ignore the this value.
+
+         Do not set `isContentMutable` to download attachments. The OneSignal SDK does this automatically.
+
+         Example of updated: `{"id": "https://domain.com/image.jpg", "custom": "test"... }`
+         */
+        public let iOSImage: URL?
+        
+        /**
+         (Android)
+         Picture to display in the expanded view. Can be a drawable resource name or a URL.
+         */
+        public let droidImage: URL?
     }
-
     /**
      The notification's title, a map of language codes to text for each language. Each hash must have a language
      code string for a key, mapped to the localized text you would like users to receive for that language.
@@ -68,7 +134,7 @@ public struct OneSignalNotification: Codable {
 
      Example: `{"en": "English Title", "es": "Spanish Title"}`
      */
-    public var title: OneSignalMessage?
+    public var title: OneSignalLocalContent?
 
     /**
      The notification's subtitle, a map of language codes to text for each language.
@@ -76,8 +142,9 @@ public struct OneSignalNotification: Codable {
      users to receive for that language.
 
      This field supports inline substitutions https://documentation.onesignal.com/docs/tag-variable-substitution.
+     Example: `{"en": "English Message", "es": "Spanish Message"}`
      */
-    public var subtitle: OneSignalMessage?
+    public var subtitle: OneSignalLocalContent?
 
     /**
      REQUIRED unless content_available=true or template_id is set.
@@ -91,7 +158,7 @@ public struct OneSignalNotification: Codable {
 
      Example: `{"en": "English Message", "es": "Spanish Message"}`
      */
-    public var message: OneSignalMessage
+    public var message: OneSignalLocalContent
 
     /**
      Category APS payload, use with `registerUserNotificationSettings:categories` in your Objective-C / Swift code.
@@ -101,6 +168,26 @@ public struct OneSignalNotification: Codable {
      */
     public var category: String?
 
+    /**
+     Describes whether to set or increase/decrease your app's iOS badge count by the`` badge`` specified count. Can specify `None`, `SetTo`, or `Increase`.
+     `None` leaves the count unaffected.
+     `SetTo` directly sets the badge count to the number specified in ios_badgeCount.
+     `Increase` adds the number specified in ios_badgeCount to the total. Use a negative number to decrease the badge count.
+     */
+    public var badgeType: BadgeType?
+
+    /**
+     Used with ``badgeType``, describes the value to set or amount to increase/decrease your app's iOS badge count by.
+     You can use a negative number to decrease the badge count when used with an `badgeType` of Increase.
+     */
+    public var badge: Int?
+    
+    /**
+     (Android)
+     Picture to display in the expanded view. Can be a drawable resource name or a URL.
+     */
+    public var bigPicture: URL?
+    
     /**
      Sound file that is included in your app to play instead of the default device notification sound.
      Pass nil to disable vibration and sound for the notification.
@@ -150,126 +237,60 @@ public struct OneSignalNotification: Codable {
      Triggers `didReceive(_:withContentHandler:)` on your `UNNotificationServiceExtension.`
      */
     public var isContentMutable: Bool?
-
-    public init(message: String) {
-        self.message = OneSignalMessage(message)
-    }
-
-    public init(message: OneSignalMessage) {
+    
+    /**
+     Init method
+     */
+    public init(title: OneSignalLocalContent? = nil,
+                subtitle: OneSignalLocalContent? = nil,
+                message: OneSignalLocalContent,
+                config: Config? = nil,
+                additionalData: [String : String]? = nil,
+                attachments: [String : String]? = nil
+        ) {
+        
+        self.title = title
+        self.subtitle = subtitle
         self.message = message
-    }
-
-    public init(title: String?, subtitle: String?, body: String, sound: String? = nil, category: String? = nil, sendAfter: String? = nil, additionalData: [String : String]? = nil, attachments: [String : String]? = nil) {
-        if let title = title { self.title = OneSignalMessage(title) }
-        if let subtitle = subtitle { self.subtitle = OneSignalMessage(subtitle) }
-        self.message = OneSignalMessage(body)
-        self.sound = sound
-        self.category = category
-        self.sendAfter = sendAfter
+        self.sound = config?.sound
+        self.category = config?.category
+        self.sendAfter = config?.sendAfter
+        self.badge = config?.badge
+        self.badgeType = config?.badgeType
+        self.bigPicture = config?.droidImage
         self.additionalData = additionalData
         self.attachments = attachments
-    }
-}
-
-extension OneSignalNotification {
-    public mutating func addMessage(_ message: String, language: String = "en") {
-        self.message[language] = message
-    }
-}
-
-extension OneSignalNotification {
-    public mutating func setTitle(_ title: String) {
-        self.setTitle(OneSignalMessage(title))
-    }
-
-    public mutating func setTitle(_ message: OneSignalMessage) {
-        self.title = message
-    }
-
-    public mutating func setSubtitle(_ subtitle: String) {
-        self.setSubtitle(OneSignalMessage(subtitle))
-    }
-
-    public mutating func setSubtitle(_ message: OneSignalMessage) {
-        self.subtitle = message
-    }
-
-    public mutating func setContentAvailable(_ isContentAvailable: Bool?) {
-        self.isContentAvailable = isContentAvailable
-    }
-
-    public mutating func setContentMutability(_ isContentMutable: Bool?) {
-        self.isContentMutable = isContentMutable
-    }
-}
-
-extension OneSignalNotification {
-    internal func generateRequest(on container: Container, for app: OneSignalApp, method: Method) throws -> Request {
-        let request = Request(using: container)
-        request.http.method = .POST
-        
-        request.http.headers.add(name: .connection, value: "Keep-Alive")
-        request.http.headers.add(name: .authorization, value: "Basic \(app.apiKey)")
-        request.http.headers.add(name: .contentType, value: "application/json")
-        
-        let playerIds: [String]?
-        let iosDeviceTokens: [String]?
-        let segments: [String]?
-        let excludedSegments: [String]?
-        
-        switch method {
-        case let .players(ids, tokens):
-            playerIds = ids
-            iosDeviceTokens = tokens
-            segments = nil
-            excludedSegments = nil
-        case let .segments(included, excluded):
-            segments = included
-            excludedSegments = excluded
-            playerIds = nil
-            iosDeviceTokens = nil
+        if let imageURL = config?.iOSImage, self.attachments?["id"] == nil {
+            if self.attachments == nil  {
+                self.attachments = [String : String]()
+            }
+            self.attachments?["id"] = "\(imageURL)"
         }
-
-        let payload = OneSignalPayload(
-            appId: app.appId,
-            playerIds: playerIds,
-            iosDeviceTokens: iosDeviceTokens,
-            segments: segments,
-            excludedSegments: excludedSegments,
-            contents: self.message.messages,
-            headings: self.title?.messages,
-            subtitle: self.subtitle?.messages,
-            category: self.category,
-            sound: self.sound,
-            sendAfter: self.sendAfter,
-            additionalData: self.additionalData,
-            attachments: self.attachments,
-            contentAvailable: self.isContentAvailable,
-            mutableContent: self.isContentMutable
-        )
-
-        let bodyData: Data
-        do {
-            bodyData = try JSONEncoder().encode(payload)
-        } catch {
-            throw OneSignalError.makeRequestBodyFailed(error)
-        }
-
-        let request: HTTPClient.Request
-        do {
-            request = try HTTPClient.Request(
-                url: url,
-                method: .POST,
-                headers: .init([
-                    ("Authorization", "Basic \(app.apiKey)"),
-                    ("Content-Type", "application/json"),
-                ]),
-                body: .data(bodyData)
-            )
-        } catch {
-            throw OneSignalError.makeRequestFailed(error)
-        }
-
-        return request
     }
+    
 }
+
+extension OneSignalNotification: Codable {
+    
+    enum CodingKeys: String, CodingKey {
+        case title
+        case subtitle
+        case message
+
+        case category = "ios_category"
+        
+        case sound = "ios_sound"
+        case badge = "ios_badgeCount"
+        case badgeType = "ios_badgeType"
+        case sendAfter = "send_after"
+        case additionalData = "data"
+        case attachments = "ios_attachments"
+
+        case isContentAvailable = "content_available"
+        case isContentMutable = "mutable_content"
+        
+        case bigPicture = "big_picture"
+    }
+    
+}
+
