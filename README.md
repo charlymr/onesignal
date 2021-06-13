@@ -63,7 +63,7 @@ withSegments(_ included: [String], excluded: [String]? = nil)
 withAllSegments(excluded: [String]? = nil)
 ```
 
-####`included: [String]`
+#### `included: [String]`
 - The segment names you want to target.
 Users in these segments will receive a notification.
 This targeting parameter is only compatible with excluded_segments.
