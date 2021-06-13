@@ -17,7 +17,7 @@ public final class OneSignal {
     public init(session: URLSession = URLSession.init(configuration: URLSessionConfiguration.default)) {
         self.session = session
     }
-
+    
     /// Send the message to OneSignal
     /// - Parameters:
     ///   - notification: ``OneSignalNotification`` to send
@@ -39,15 +39,15 @@ public final class OneSignal {
             let task = session.dataTask(with: request) { data, response, error in
                 
                 guard let body = data, let response = response as? HTTPURLResponse else {
-                    completion(OneSignalResult.error(error: OneSignalError.internal), nil)
+                    completion(OneSignalResult.error(error: OneSignalError.internal), data)
                     return
                 }
                 if let error = error {
-                    completion(OneSignalResult.networkError(error: error), nil)
+                    completion(OneSignalResult.networkError(error: error), data)
                     return
                 }
                 guard response.statusCode == 200 else {
-                    completion(OneSignalResult.error(error: OneSignalError.internal), nil)
+                    completion(OneSignalResult.error(error: OneSignalError.internal), data)
                     return
                 }
                 completion(.success, body)
@@ -65,5 +65,38 @@ public final class OneSignal {
         }
         return nil
     }
-
+    
+    /// Send Sync request to OneSignal
+    /// - Parameters:
+    ///   - notification: ``OneSignalNotification`` to send
+    ///   - app: The ``OneSignalApp`` containing API Key/ API token
+    ///   - target: Notification target. See ``OneSignalNotification.Method``
+    /// - Returns: ``OneSignalResult`` & response ``Data?`` if any & ``Bool`` set to true if the request has timeout
+    @discardableResult
+    public func syncSend(timeoutSeconds: Int = 30,
+                         notification: OneSignalNotification,
+                         toApp app: OneSignalApp,
+                         target: OneSignalNotification.Method) throws -> (OneSignalResult, Data?, Bool)? {
+        do {
+            
+            let request = try notification.generateRequest(for: app, method: target)
+            let result = session.syncRequest(with: request, timeoutSeconds: timeoutSeconds)
+            guard let body = result.data, let response = result.response as? HTTPURLResponse else {
+                return (OneSignalResult.error(error: OneSignalError.internal), result.data, result.timeout)
+            }
+            if let error = result.error {
+                return (OneSignalResult.networkError(error: error),  result.data, result.timeout)
+            }
+            guard response.statusCode == 200 else {
+                return (OneSignalResult.error(error: OneSignalError.internal),  result.data, result.timeout)
+            }
+            return (.success, body, result.timeout)
+            
+        } catch let error as OneSignalError {
+            return (OneSignalResult.error(error: error), nil, false)
+            
+        } catch {
+            return (OneSignalResult.error(error: OneSignalError.internal), nil, false)
+        }
+    }
 }

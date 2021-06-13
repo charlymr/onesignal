@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum OneSignalIOSBadgeType: String, Codable, CodingKey {
+public enum OneSignalIOSBadgeType: String, Codable {
     case None = "None"
     case SetTo = "SetTo"
     case Increase = "Increase"

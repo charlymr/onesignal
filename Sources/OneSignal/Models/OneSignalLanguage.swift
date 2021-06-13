@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum OneSignalLanguage: String, Codable, CodingKey {
+public enum OneSignalLanguage: String, Codable {
     case english = "en"
     case arabic = "ar"
     case catalan = "ca"

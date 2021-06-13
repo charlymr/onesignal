@@ -19,9 +19,9 @@ public struct OneSignalPayload {
     public var segments: [String]?
     public var excludedSegments: [String]?
     
-    public var contents: [Language: String]
-    public var headings: [Language: String]?
-    public var subtitle: [Language: String]?
+    public var contents: OneSignalLocalContent
+    public var headings: OneSignalLocalContent?
+    public var subtitle: OneSignalLocalContent?
 
     public var category: String?
     public var badge: Int?
