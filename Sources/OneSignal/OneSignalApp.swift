@@ -20,6 +20,10 @@ public struct OneSignalApp: Codable {
 
     /**
      Init method
+     - See: https://documentation.onesignal.com/reference/create-notification
+     - Parameters:
+     - apiKey: OneSignal API Key
+     - appId:  OneSignal APP  ID
      */
     public init(apiKey: String, appId: String) {
         self.apiKey = apiKey

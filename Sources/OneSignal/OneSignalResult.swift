@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Vapor
 
 public enum OneSignalError: Swift.Error {
     case `internal`
