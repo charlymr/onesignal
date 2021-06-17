@@ -126,6 +126,25 @@ public struct OneSignalNotification {
          Picture to display in the expanded view. Can be a drawable resource name or a URL.
          */
         public let droidImage: URL?
+        
+        /**
+           Init
+         */
+        public init(sound: String? = nil,
+             category: String? = nil,
+             sendAfter: String? = nil,
+             badge: Int? = nil,
+             badgeType: BadgeType? = nil,
+             iOSImage: URL? = nil,
+             droidImage: URL? = nil) {
+            self.sound = sound
+            self.category = category
+            self.sendAfter = sendAfter
+            self.badge = badge
+            self.badgeType = badgeType
+            self.iOSImage = iOSImage
+            self.droidImage = droidImage
+        }
     }
     /**
      The notification's title, a map of language codes to text for each language. Each hash must have a language
