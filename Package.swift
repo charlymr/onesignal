@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "OneSignal",
+    name: "onesignal",
     products: [
         .library(name: "OneSignal", targets: ["OneSignal"]),
     ],
